@@ -11,3 +11,5 @@ Copyright 2016 Zhaorui Chen, Zhengyang Li, Jiaxuan Yue
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+# For sublime: check indent with spaces, and set indent as 4 spaces
