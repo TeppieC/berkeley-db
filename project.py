@@ -30,19 +30,14 @@ DB_SIZE = 100000
 SEED = 10000000
 
 # helper functions
-def saveInFile(key,value):
-	key = key.decode('UTF-8')
-	value = key.decode('UTF-8')
-	#########
-
 def get_random():
     return random.randint(0, 63)
 
 def get_random_char():
     return chr(97 + random.randint(0, 25))
 
-def createPopulateDatabase(mode):
-	if mode==1:
+def createPopulateDatabase(dbType):
+	if dbType==1:
 		# create a b-tree database
 		database = db.DB()
 		try:
@@ -50,7 +45,7 @@ def createPopulateDatabase(mode):
 		except:
 			print('Error creating file')
 		random.seed(SEED)
-	elif mode==2:
+	elif dbType==2:
 		# create a hash database
 		database = db.DB()
 		try:
@@ -58,7 +53,7 @@ def createPopulateDatabase(mode):
 		except:
 			print('Error creating file')
 		random.seed(SEED)
-	elif mode==3:
+	elif dbType==3:
 		pass
 
 	# insert into keys and values
@@ -88,20 +83,19 @@ def createPopulateDatabase(mode):
     	print(e)
 
 
-def retrieveWithKey(mode):
+def retrieveWithKey(dbType):
 	database = db.DB()
-	if mode == 1:
-		DA_FILE = "/tmp/zhaorui_db/berkeley_db_btree"
+	if dbType == 1:
 		database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
-	elif mode==2:
-		pass
-	elif mode==3:
+	elif dbType==2:
+		database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+	elif dbType==3:
 		pass
 
 	key = input("Please input a valid key: ")
 	startTime = time.time()
 	try:
-		value = db.get(key.encode(encoding='UTF-8'))
+		value = database.get(key.encode(encoding='UTF-8'))
 	except:
 		print('Value not found')
 	endTime = time.time()
@@ -116,15 +110,69 @@ def retrieveWithKey(mode):
 	file.write(value+'\n')
 	file.write('\n')
 	file.close()
-	pass
+	
+	try:
+    	database.close()
+    except Exception as e:
+    	print(e)
 
-def retrieveWithData(mode):
-	pass
+def retrieveWithData(dbType):
+	database = db.DB()
+	if dbType == 1:
+		database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
+	elif dbType==2:
+		database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+	elif dbType==3:
+		pass
+	
+	value = input("Please input a value: ").encode(encoding='UTF-8')
+	keys = []
+	startTime = time.time()
 
-def retrieveWithRange(mode):
-	pass
+	for key in database.keys():
+		if database.get(key)==value:
+			keys.append(key.decode('UTF-8'))
 
-def destroyDatabase(mode):
+	endTime = time.time()
+	elapsedTimeMilli = 1000000*(endTime-startTime)
+	print("Retrieved keys: "+str(keys))
+	print("Elapsed time: %d"%elapsedTimeMilli)
+
+	# record in file
+	file = open('answers', 'a')
+	if not keys==[]:
+		for key in keys:
+			file.write(key+'\n')
+			file.write(value.decode('UTF-8')+'\n')
+			file.write('\n')
+		file.close
+
+	# close the database
+	try:
+    	database.close()
+    except Exception as e:
+    	print(e)
+
+def retrieveWithRange(dbType):
+	database = db.DB()
+	if dbType == 1:
+		database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
+	elif dbType==2:
+		database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+	elif dbType==3:
+		pass
+	
+	lowerBound = input('Please input the lower bound of the range: ')
+	upperBound = input('Please input the upper bound of the range: ')
+	while lowerBound>upperBound:
+		print('Input invalid.')
+		lowerBound = input('Please input the lower bound of the range: ')
+		upperBound = input('Please input the upper bound of the range: ')
+	#unfinished
+		
+
+
+def destroyDatabase(dbType):
 	pass
 
 def main():
@@ -132,15 +180,15 @@ def main():
 		os.makedirs(PATH_DIRECTORY)
 	global OUTPUT_FILE = open("answers","w") # output file
 
-	modeChoice = sys.argv[1].lower()
-	mode = 0
-	while not mode:
-		mode = {
+	dbTypeChoice = sys.argv[1].lower()
+	dbType = 0
+	while not dbType:
+		dbType = {
 			"btree" : 1,
 			"hash" : 2,
 			"indexfile":3
-		}.get(modeChoice, 0)
-	if not modeChoice:
+		}.get(dbTypeChoice, 0)
+	if not dbTypeChoice:
 		print('database type error')
 		return
 
@@ -159,15 +207,15 @@ def main():
     	selected = input('Please select the program: ')
     	
     	if selected == '1':
-    		createPopulateDatabase(mode)
+    		createPopulateDatabase(dbType)
     	elif selected == '2':
-    		retrieveWithKey(mode)
+    		retrieveWithKey(dbType)
     	elif selected == '3':
-    		retrieveWithData(mode)
+    		retrieveWithData(dbType)
     	elif selected == '4':
-    		retrieveWithRange(mode)
+    		retrieveWithRange(dbType)
     	elif selected == '5':
-    		destroyDatabase(mode)
+    		destroyDatabase(dbType)
     		#TODO
     	elif selected == '6':
     		#TODO
@@ -179,7 +227,7 @@ if __main__ == '__main__':
 	main()
 
 ## 1. what is a index file? how it works?
-## 2. use of the new methods. How to open in "read and write"
+## 2. use of the new methods. How to open in "read and write" and how to close it?
 ## 3. how to reopen a database created before?
 ### Use a big trunk of main()
 # invertedDA_FILE?
