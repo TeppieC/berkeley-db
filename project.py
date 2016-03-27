@@ -15,7 +15,7 @@ Copyright 2016 Zhaorui Chen, Zhenyang Li, Jiaxuan Yue
 # For sublime: check indent with spaces, and set indent as 4 spaces
 
 # imports
-import bsddb3 as bsddb
+from bsddb3 import db
 import random
 import os
 import sys
@@ -35,14 +35,87 @@ def saveInFile(key,value):
 	value = key.decode('UTF-8')
 	#########
 
+def get_random():
+    return random.randint(0, 63)
+
+def get_random_char():
+    return chr(97 + random.randint(0, 25))
+
 def createPopulateDatabase(mode):
 	if mode==1:
 		# create a b-tree database
-		db = bsddb.btopen(DA_FILE+'btree')
+		database = db.DB()
+		try:
+			database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_CREATE)
+		except:
+			print('Error creating file')
+		random.seed(SEED)
+	elif mode==2:
+		# create a hash database
+		database = db.DB()
+		try:
+			database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_CREATE)
+		except:
+			print('Error creating file')
+		random.seed(SEED)
+	elif mode==3:
+		pass
 
-	pass
+	# insert into keys and values
+    for index in range(DB_SIZE):
+    	# generate random key with random length
+        krng = 64 + get_random()
+        key = ""
+        for i in range(krng):
+            key += str(get_random_char())
+        # generate random value with random length
+        vrng = 64 + get_random()
+        value = ""
+        for i in range(vrng):
+            value += str(get_random_char())
+        #print (key)
+        #print (value)
+        #print ("")
+        # encoding
+        key = key.encode(encoding='UTF-8')
+        value = value.encode(encoding='UTF-8')
+        database.put(key, value);
+
+    print('Successfully populated the database')
+    try:
+    	database.close()
+    except Exception as e:
+    	print(e)
+
 
 def retrieveWithKey(mode):
+	database = db.DB()
+	if mode == 1:
+		DA_FILE = "/tmp/zhaorui_db/berkeley_db_btree"
+		database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
+	elif mode==2:
+		pass
+	elif mode==3:
+		pass
+
+	key = input("Please input a valid key: ")
+	startTime = time.time()
+	try:
+		value = db.get(key.encode(encoding='UTF-8'))
+	except:
+		print('Value not found')
+	endTime = time.time()
+	elapsedTimeMilli = 1000000*(endTime-startTime)
+	value = value.decode(encoding='UTF-8')
+	print("Retrieved value: %s"%value)
+	print("Elapsed time: %d"%elapsedTimeMilli)
+
+	# record in file
+	file = open("answers", "a")
+	file.write(key+'\n')
+	file.write(value+'\n')
+	file.write('\n')
+	file.close()
 	pass
 
 def retrieveWithData(mode):
@@ -67,7 +140,9 @@ def main():
 			"hash" : 2,
 			"indexfile":3
 		}.get(modeChoice, 0)
-
+	if not modeChoice:
+		print('database type error')
+		return
 
     selected = 0
     while True:
@@ -102,3 +177,9 @@ def main():
 
 if __main__ == '__main__':
 	main()
+
+## 1. what is a index file? how it works?
+## 2. use of the new methods. How to open in "read and write"
+## 3. how to reopen a database created before?
+### Use a big trunk of main()
+# invertedDA_FILE?
