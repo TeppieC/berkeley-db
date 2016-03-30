@@ -75,6 +75,7 @@ def createPopulateDatabase(dbType):
         database = db.DB()
         try:
             database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
+            database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_CREATE)
         except:
             print('Error creating file')
         random.seed(SEED)
@@ -199,6 +200,7 @@ def retrieveWithRange(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
+
         pass
     
     lowerBound = input('Please input the lower bound of the range: ')
@@ -220,7 +222,8 @@ def destroyDatabase(dbType):
             call(["rm","-r","./tmp/zhaorui_db/berkeley_db_btree"])
         if dbType == 2:
             call(["rm","-r","./tmp/zhaorui_db/berkeley_db_hash"])
-        if dbType == 3:            
+        if dbType == 3:                        
+            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_secindex"])
             call(["rm","-r","./tmp/zhaorui_db/berkeley_db_index"])
     except IOError:
         print('Cannot find the file')
