@@ -25,6 +25,7 @@ import random
 import os
 import sys
 import time
+from subprocess import call
 
 # set the path
 PATH_DIRECTORY = "tmp/zhaorui_db/"
@@ -40,7 +41,19 @@ def get_random():
 def get_random_char():
     return chr(97 + random.randint(0, 25))
 
+def databaseExist(dbType):
+    if dbType==1:
+        return os.path.isfile('./'+DA_FILE+'_btree')
+    elif dbType==2:
+        return os.path.isfile('./'+DA_FILE+'_hash')
+    elif dbType==3:
+        return os.path.isfile('./'+DA_FILE+'_index')
+
 def createPopulateDatabase(dbType):
+    if databaseExist(dbType):
+        print('Database already exist')
+        return
+
     if dbType==1:
         # create a b-tree database
         database = db.DB()
@@ -66,7 +79,6 @@ def createPopulateDatabase(dbType):
             print('Error creating file')
         random.seed(SEED)
         # using b-tree
-        pass
 
     # insert into keys and values
     for index in range(DB_SIZE):
@@ -88,6 +100,7 @@ def createPopulateDatabase(dbType):
         value = value.encode(encoding='UTF-8')
         database.put(key, value);
 
+    database.put(b'teppie',b'chen')
     print('Successfully populated the database')
     try:
         database.close()
@@ -96,6 +109,10 @@ def createPopulateDatabase(dbType):
 
 
 def retrieveWithKey(dbType):
+    if not databaseExist(dbType):
+        print('Database not exist, please select 1 to populate a new database')
+        return
+
     database = db.DB()
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
@@ -110,6 +127,8 @@ def retrieveWithKey(dbType):
         value = database.get(key.encode(encoding='UTF-8'))
     except:
         print('Value not found')
+        database.close()
+        return
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
     value = value.decode(encoding='UTF-8')
@@ -129,6 +148,10 @@ def retrieveWithKey(dbType):
         print(e)
 
 def retrieveWithData(dbType):
+    if not databaseExist(dbType):
+        print('Database not exist, please select 1 to populate a new database')
+        return
+
     database = db.DB()
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
@@ -166,6 +189,10 @@ def retrieveWithData(dbType):
         print(e)
 
 def retrieveWithRange(dbType):
+    if not databaseExist(dbType):
+        print('Database not exist, please select 1 to populate a new database')
+        return
+
     database = db.DB()
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
@@ -183,11 +210,15 @@ def retrieveWithRange(dbType):
     #unfinished
         
 
-
 def destroyDatabase(dbType):    
+    if not databaseExist(dbType):
+        print('Database not exist, please select 1 to populate a new database')
+        return
+
     try:
         if dbType == 1:
-            os.system('rm -r /tmp/zhaorui_db/berkeley_db_btree')
+            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_btree"])
+            #os.system('rm -r /tmp/zhaorui_db/berkeley_db_btree')
         if dbType == 2:
             os.system('rm -r /tmp/zhaorui_db/berkeley_db_hash')
         if dbType == 3:
@@ -197,17 +228,23 @@ def destroyDatabase(dbType):
         print('Cannot find the file')
     
 def main():
+    # create path
     if not os.path.exists(PATH_DIRECTORY):
         os.makedirs(PATH_DIRECTORY)
     #global OUTPUT_FILE = open("answers","w") # output file
 
-    dbTypeChoice = sys.argv[1].lower()
+    try:
+        dbTypeChoice = sys.argv[1].lower()
+    except IndexError:
+        print('You should specify which type of database to use')
+        return
+
     dbType = 0
     while not dbType:
         dbType = {
             "btree" : 1,
             "hash" : 2,
-            "indexfile":3
+            "index":3
         }.get(dbTypeChoice, 0)
     if not dbTypeChoice:
         print('database type error')
@@ -241,13 +278,13 @@ def main():
         elif selected == '6':
             destroyDatabase("btree")
             destroyDatabase("hash")
-            destroyDatabase("indexfile")
-            #os.system('rm -r answers')
+            destroyDatabase("index")
+            os.system('rm -r answers')
             break
 
     print('See you~')
 
-if __main__ == '__main__':
+if __name__ == '__main__':
     main()
 
 ## 1. what is a index file? how it works?
