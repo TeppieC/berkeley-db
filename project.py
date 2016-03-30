@@ -166,18 +166,18 @@ def retrieveWithData(dbType):
 
     for key in database.keys():
         if database.get(key)==value:
-            keys.append(key.decode('UTF-8'))
+            keys.append(key)
 
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
-    print("Retrieved keys: "+str(keys))
     print("Elapsed time: %d"%elapsedTimeMilli)
 
     # record in file
     file = open('answers', 'a')
     if not keys==[]:
         for key in keys:
-            file.write(key+'\n')
+            print("Retrieved key: "+key)
+            file.write(key.decode('UTF-8')+'\n')
             file.write(value.decode('UTF-8')+'\n')
             file.write('\n')
         file.close()
@@ -276,10 +276,8 @@ def main():
         elif selected == '5':
             destroyDatabase(dbType)
         elif selected == '6':
-            destroyDatabase("btree")
-            destroyDatabase("hash")
-            destroyDatabase("index")
-            os.system('rm -r answers')
+            destroyDatabase(dbTypeChoice)
+            call(["rm","-r","answers"])
             break
 
     print('See you~')
