@@ -117,7 +117,7 @@ def retrieveWithKey(dbType):
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
     elif dbType==2:
-        database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
 
@@ -156,7 +156,7 @@ def retrieveWithData(dbType):
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
     elif dbType==2:
-        database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
     
@@ -197,7 +197,7 @@ def retrieveWithRange(dbType):
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
     elif dbType==2:
-        database.open(DA_FILE+'_btree', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         pass
     
@@ -218,12 +218,10 @@ def destroyDatabase(dbType):
     try:
         if dbType == 1:
             call(["rm","-r","./tmp/zhaorui_db/berkeley_db_btree"])
-            #os.system('rm -r /tmp/zhaorui_db/berkeley_db_btree')
         if dbType == 2:
-            os.system('rm -r /tmp/zhaorui_db/berkeley_db_hash')
-        if dbType == 3:
-            os.system("rm /tmp/zhaorui_db/berkeley_db_index")
-
+            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_hash"])
+        if dbType == 3:            
+            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_index"])
     except IOError:
         print('Cannot find the file')
     
