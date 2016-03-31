@@ -210,7 +210,38 @@ def retrieveWithRange(dbType):
         lowerBound = input('Please input the lower bound of the range: ')
         upperBound = input('Please input the upper bound of the range: ')
     #unfinished
-        
+    #        cur = database.cursor()
+    #    start = cur.setRange(lowerBound.encode(encoding='UTF-8'))
+
+    resultKeys = []
+    startTime = time.time()
+    for key in database.keys():
+        if key>=lowerBound and key>=upperBound:
+            resultKeys.append(key)
+    endTime = time.time()
+    elapsedTimeMilli = 1000000*(endTime-startTime)
+
+    if not resultKeys:
+        print('No result found in the database.')
+        return
+
+    # record in file
+    file = open('answers', 'a')
+    print('Retrieved: ')
+    for key in resultKeys:
+        print('Key: ',key.decode('UTF-8'))
+        print('Value: ', db.get(key).decode('UTF-8'))
+        file.write(key.decode('UTF-8')+'\n')
+        file.write(value.decode('UTF-8')+'\n')
+        file.write('\n')
+    file.close()
+    print('Elapsed time: ', elapsedTimeMilli)
+
+    # close the database
+    try:
+        database.close()
+    except Exception as e:
+        print(e)
 
 def destroyDatabase(dbType):    
     if not databaseExist(dbType):
@@ -264,8 +295,11 @@ def main():
             6. Quit
             ------------------------------------------
             ''')
-        selected = input('Please select the program: ')
-        
+
+        while not (selected=='1' or selected=='2' or selected=='3'\
+            selected=='4' or selected=='5' or selected=='6'):
+            selected = input('Please select the program: ')
+            
         if selected == '1':
             createPopulateDatabase(dbType)
         elif selected == '2':
