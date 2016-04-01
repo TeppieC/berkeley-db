@@ -244,6 +244,7 @@ def retrieveWithRange(dbType):
         print(e)
 
 def destroyDatabase(dbType):    
+    ## call DB--> remove()
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
         return
