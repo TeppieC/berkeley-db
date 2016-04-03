@@ -18,6 +18,7 @@ Copyright 2016 Zhaorui Chen, Zhenyang Li, Jiaxuan Yue
 # For the 3rd query, range search in based on the primary key of 
 # the records --- key value. Therefore if the main index is a B-tree
 # then it can be used for this range search.
+# We use two btree databases for the index file
 
 # imports
 from bsddb3 import db
@@ -112,6 +113,8 @@ def createPopulateDatabase(dbType):
 
 
 def retrieveWithKey(dbType):
+    print('#'*70)
+    print('****************Retrieve Data With Key**************')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
         return
@@ -126,12 +129,12 @@ def retrieveWithKey(dbType):
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
         database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
-    key = input("Please input a valid key: ")
+    key = input("Please enter a valid key: ")
     startTime = time.time()
     try:
         value = database.get(key.encode(encoding='UTF-8'))
     except:
-        print('Value not found')
+        print('Data not found')
         database.close()
         return
     endTime = time.time()
@@ -140,11 +143,11 @@ def retrieveWithKey(dbType):
     try:
         value = value.decode(encoding='UTF-8')
     except AttributeError:
-        print('Value not found in the database')
+        print('Data not found for this key in the database')
         database.close()
         return
 
-    print("Retrieved value: %s"%value)
+    print("Retrieved data: %s"%value)
     print("Elapsed time: %d"%elapsedTimeMilli)
 
     # record in file
@@ -162,6 +165,8 @@ def retrieveWithKey(dbType):
         print(e)
 
 def retrieveWithData(dbType):
+    print('#'*70)
+    print('****************Retrieve Key With Data**************')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
         return
@@ -176,7 +181,7 @@ def retrieveWithData(dbType):
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
         database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
-    value = input("Please input a value: ").encode(encoding='UTF-8')
+    value = input("Please enter a data: ").encode(encoding='UTF-8')
     keys = []
     startTime = time.time()
 
@@ -196,7 +201,7 @@ def retrieveWithData(dbType):
             file.write('\n')
         file.close()
     else:
-        print('Key not found in the database.')
+        print('Key not found for the given data in the database.')
 
     print("Elapsed time: %d"%elapsedTimeMilli)
     # close the database
@@ -208,16 +213,18 @@ def retrieveWithData(dbType):
         print(e)
 
 def retrieveWithRange(dbType):
+    print('#'*70)
+    print('***********Retrieve Key and Data With A Range of Key**********')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
         return
 
-    lowerBound = input('Please input the lower bound of the range: ')
-    upperBound = input('Please input the upper bound of the range: ')
+    lowerBound = input('Please enter the lower bound of the range: ')
+    upperBound = input('Please enter the upper bound of the range: ')
     while lowerBound>upperBound:
         print('Input invalid. Lower bound should not be higher than upper bound.')
-        lowerBound = input('Please input the lower bound of the range: ')
-        upperBound = input('Please input the upper bound of the range: ')
+        lowerBound = input('Please enter the lower bound of the range: ')
+        upperBound = input('Please enter the upper bound of the range: ')
 
     lowerBound = lowerBound.encode('UTF-8')
     upperBound = upperBound.encode('UTF-8')
@@ -242,13 +249,13 @@ def retrieveWithRange(dbType):
         elapsedTimeMilli = 1000000*(endTime-startTime)
 
         if not results:
-            print('No result found in the database.')
+            print('No result found for the range of key in the database.')
             return
     else:
         keys = database.keys()
         # use binary search to speed up search in indexfile
-        start = binarySearch(database.keys(), lowerBound) # locate the start point of the keys
-        end = binarySearch(database.keys(), upperBound)# locate the end point of the keys
+        start = keySearch(database.keys(), lowerBound) # locate the start point of the keys
+        end = keySearch(database.keys(), upperBound)# locate the end point of the keys
 
         startTime = time.time()
         for i in range(start, end):
@@ -261,11 +268,11 @@ def retrieveWithRange(dbType):
     print('Retrieved: ')
     for kVPair in results:
         key = kVPair[0].decode('UTF-8')
-        value = kVPair[1].decode('UTF-8')
+        data = kVPair[1].decode('UTF-8')
         #print('Key: ', key)
-        #print('Value: ', value)
+        #print('Data: ', data)
         file.write(key+'\n')
-        file.write(value+'\n')
+        file.write(data+'\n')
         file.write('\n')
     file.close()
     print('Elapsed time: ', elapsedTimeMilli)
@@ -278,9 +285,13 @@ def retrieveWithRange(dbType):
     except Exception as e:
         print(e)
 
-def binarySearch(db, key):
+def keySearch(dbKeys, key):
+    '''
+    using binary search to locate the key
+    in the database
+    '''
     l = 0
-    h = len(db)-1
+    h = len(dbKeys)-1
     while l<h:
         m = (l+h)//2
         if key == db[m]:
@@ -294,21 +305,21 @@ def binarySearch(db, key):
     return result
 
 def destroyDatabase(dbType,mode):
-    ## call DB--> remove()
+    ## call DB--> remove() to remove the database
     if (not databaseExist(dbType) and mode==0):
         print('Database not exist, please select 1 to populate a new database')
         return
 
     try:
         if dbType == 1:
-            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_btree"])
+            db.DB().remove("./tmp/zhaorui_db/berkeley_db_btree")
         if dbType == 2:
-            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_hash"])
+            db.DB().remove("./tmp/zhaorui_db/berkeley_db_hash")
         if dbType == 3:                        
-            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_secindex"])
-            call(["rm","-r","./tmp/zhaorui_db/berkeley_db_index"])
-    except IOError:
-        print('Cannot find the file')
+            db.DB().remove("./tmp/zhaorui_db/berkeley_db_index")
+            db.DB().remove("./tmp/zhaorui_db/berkeley_db_secindex")
+    except bsddb3.db.DBNoSuchFileError:
+        pass
 
 def main():
     # create path
