@@ -101,7 +101,10 @@ def createPopulateDatabase(dbType):
         value = value.encode(encoding='UTF-8')
         database.put(key, value);
 
-    database.put(b'teppie',b'chen')
+    database.put(b'teppie',b'chen') ###################### test use
+    database.put(b'teppif',b'chen1')
+    database.put(b'teppid',b'chen2')
+
     print('Successfully populated the database')
     try:
         database.close()
@@ -121,6 +124,7 @@ def retrieveWithKey(dbType):
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please input a valid key: ")
     startTime = time.time()
@@ -132,7 +136,14 @@ def retrieveWithKey(dbType):
         return
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
-    value = value.decode(encoding='UTF-8')
+
+    try:
+        value = value.decode(encoding='UTF-8')
+    except AttributeError:
+        print('Value not found in the database')
+        database.close()
+        return
+
     print("Retrieved value: %s"%value)
     print("Elapsed time: %d"%elapsedTimeMilli)
 
@@ -160,6 +171,8 @@ def retrieveWithData(dbType):
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+
     
     value = input("Please input a value: ").encode(encoding='UTF-8')
     keys = []
@@ -171,18 +184,19 @@ def retrieveWithData(dbType):
 
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
-    print("Elapsed time: %d"%elapsedTimeMilli)
-
     # record in file
     file = open('answers', 'a')
     if not keys==[]:
         for key in keys:
-            print("Retrieved key: "+key)
+            print("Retrieved key: "+ key.decode('UTF-8'))
             file.write(key.decode('UTF-8')+'\n')
             file.write(value.decode('UTF-8')+'\n')
             file.write('\n')
         file.close()
+    else:
+        print('Key not found in the database.')
 
+    print("Elapsed time: %d"%elapsedTimeMilli)
     # close the database
     try:
         database.close()
@@ -200,8 +214,8 @@ def retrieveWithRange(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-
-        pass
+        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
     
     lowerBound = input('Please input the lower bound of the range: ')
     upperBound = input('Please input the upper bound of the range: ')
@@ -216,8 +230,9 @@ def retrieveWithRange(dbType):
     resultKeys = []
     startTime = time.time()
     for key in database.keys():
-        if key>=lowerBound and key>=upperBound:
-            resultKeys.append(key)
+        keyVal = key.decode('UTF-8')
+        if keyVal>=lowerBound and keyVal>=upperBound:
+            resultKeys.append(keyVal)
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
 
@@ -229,10 +244,11 @@ def retrieveWithRange(dbType):
     file = open('answers', 'a')
     print('Retrieved: ')
     for key in resultKeys:
-        print('Key: ',key.decode('UTF-8'))
-        print('Value: ', db.get(key).decode('UTF-8'))
-        file.write(key.decode('UTF-8')+'\n')
-        file.write(value.decode('UTF-8')+'\n')
+        print('Key: ', key)
+        value = database.get(key.encode('UTF-8')).decode('UTF-8')
+        print('Value: ', value)
+        file.write(key+'\n')
+        file.write(value+'\n')
         file.write('\n')
     file.close()
     print('Elapsed time: ', elapsedTimeMilli)
@@ -243,9 +259,9 @@ def retrieveWithRange(dbType):
     except Exception as e:
         print(e)
 
-def destroyDatabase(dbType):    
+def destroyDatabase(dbType,mode):
     ## call DB--> remove()
-    if not databaseExist(dbType):
+    if (not databaseExist(dbType) and mode==0):
         print('Database not exist, please select 1 to populate a new database')
         return
 
@@ -259,7 +275,7 @@ def destroyDatabase(dbType):
             call(["rm","-r","./tmp/zhaorui_db/berkeley_db_index"])
     except IOError:
         print('Cannot find the file')
-    
+
 def main():
     # create path
     if not os.path.exists(PATH_DIRECTORY):
@@ -283,9 +299,8 @@ def main():
         print('database type error')
         return
 
-    selected = 0
     while True:
-
+        selected = 0
         print('''
             ------------------------------------------
             1. Create and populate a database
@@ -297,8 +312,7 @@ def main():
             ------------------------------------------
             ''')
 
-        while not (selected=='1' or selected=='2' or selected=='3'\
-            selected=='4' or selected=='5' or selected=='6'):
+        while not (selected=='1' or selected=='2' or selected=='3' or selected=='4' or selected=='5' or selected=='6'):
             selected = input('Please select the program: ')
             
         if selected == '1':
@@ -310,9 +324,9 @@ def main():
         elif selected == '4':
             retrieveWithRange(dbType)
         elif selected == '5':
-            destroyDatabase(dbType)
+            destroyDatabase(dbType,0)
         elif selected == '6':
-            destroyDatabase(dbTypeChoice)
+            destroyDatabase(dbType,1)
             call(["rm","-r","answers"])
             break
 
