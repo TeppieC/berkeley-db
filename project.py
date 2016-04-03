@@ -73,13 +73,13 @@ def createPopulateDatabase(dbType):
     elif dbType==3:
         # create a index database
         database = db.DB()
+        database2 = db.DB()
         try:
             database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
-            database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_CREATE)
+            database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_CREATE)
         except:
             print('Error creating file')
         random.seed(SEED)
-        # using b-tree
 
     # insert into keys and values
     for index in range(DB_SIZE):
@@ -93,21 +93,20 @@ def createPopulateDatabase(dbType):
         value = ""
         for i in range(vrng):
             value += str(get_random_char())
-        #print (key)
-        #print (value)
-        #print ("")
         # encoding
         key = key.encode(encoding='UTF-8')
         value = value.encode(encoding='UTF-8')
         database.put(key, value);
 
-    database.put(b'teppie',b'chen') ###################### test use
-    database.put(b'teppif',b'chen1')
-    database.put(b'teppid',b'chen2')
+    #database.put(b'teppie',b'chen') ###################### test use
+    #database.put(b'teppif',b'chen1')
+    #database.put(b'teppid',b'chen2')
 
     print('Successfully populated the database')
     try:
         database.close()
+        if dbType==3:
+            database2.close()
     except Exception as e:
         print(e)
 
@@ -123,8 +122,9 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
+        database2 = db.DB()
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please input a valid key: ")
     startTime = time.time()
@@ -156,6 +156,8 @@ def retrieveWithKey(dbType):
     
     try:
         database.close()
+        if dbType==3:
+            database2.close()
     except Exception as e:
         print(e)
 
@@ -170,10 +172,10 @@ def retrieveWithData(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
+        database2 = db.DB()
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
-    
     value = input("Please input a value: ").encode(encoding='UTF-8')
     keys = []
     startTime = time.time()
@@ -200,6 +202,8 @@ def retrieveWithData(dbType):
     # close the database
     try:
         database.close()
+        if dbType==3:
+            database2.close()
     except Exception as e:
         print(e)
 
@@ -208,6 +212,16 @@ def retrieveWithRange(dbType):
         print('Database not exist, please select 1 to populate a new database')
         return
 
+    lowerBound = input('Please input the lower bound of the range: ')
+    upperBound = input('Please input the upper bound of the range: ')
+    while lowerBound>upperBound:
+        print('Input invalid. Lower bound should not be higher than upper bound.')
+        lowerBound = input('Please input the lower bound of the range: ')
+        upperBound = input('Please input the upper bound of the range: ')
+
+    lowerBound = lowerBound.encode('UTF-8')
+    upperBound = upperBound.encode('UTF-8')
+
     database = db.DB()
     if dbType == 1:
         database.open(DA_FILE+'_btree', None, db.DB_BTREE, db.DB_RDONLY)
@@ -215,38 +229,41 @@ def retrieveWithRange(dbType):
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
-    
-    lowerBound = input('Please input the lower bound of the range: ')
-    upperBound = input('Please input the upper bound of the range: ')
-    while lowerBound>upperBound:
-        print('Input invalid.')
-        lowerBound = input('Please input the lower bound of the range: ')
-        upperBound = input('Please input the upper bound of the range: ')
-    #unfinished
-    #        cur = database.cursor()
-    #    start = cur.setRange(lowerBound.encode(encoding='UTF-8'))
+        database2 = db.DB()
+        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        
+    results = []
+    if dbType==1 or dbType==2:
+        startTime = time.time()
+        for key in database.keys():
+            if key>=lowerBound and key>=upperBound:
+                results.append((key,database.get(key)))
+        endTime = time.time()
+        elapsedTimeMilli = 1000000*(endTime-startTime)
 
-    resultKeys = []
-    startTime = time.time()
-    for key in database.keys():
-        keyVal = key.decode('UTF-8')
-        if keyVal>=lowerBound and keyVal>=upperBound:
-            resultKeys.append(keyVal)
-    endTime = time.time()
-    elapsedTimeMilli = 1000000*(endTime-startTime)
+        if not results:
+            print('No result found in the database.')
+            return
+    else:
+        keys = database.keys()
+        # use binary search to speed up search in indexfile
+        start = binarySearch(database.keys(), lowerBound) # locate the start point of the keys
+        end = binarySearch(database.keys(), upperBound)# locate the end point of the keys
 
-    if not resultKeys:
-        print('No result found in the database.')
-        return
-
+        startTime = time.time()
+        for i in range(start, end):
+            results.append((keys[i],database.get(keys[i])))
+        endTime = time.time()
+        elapsedTimeMilli = 1000000*(endTime-startTime)
+            
     # record in file
     file = open('answers', 'a')
     print('Retrieved: ')
-    for key in resultKeys:
-        print('Key: ', key)
-        value = database.get(key.encode('UTF-8')).decode('UTF-8')
-        print('Value: ', value)
+    for kVPair in results:
+        key = kVPair[0].decode('UTF-8')
+        value = kVPair[1].decode('UTF-8')
+        #print('Key: ', key)
+        #print('Value: ', value)
         file.write(key+'\n')
         file.write(value+'\n')
         file.write('\n')
@@ -256,8 +273,25 @@ def retrieveWithRange(dbType):
     # close the database
     try:
         database.close()
+        if dbType==3:
+            database2.close()
     except Exception as e:
         print(e)
+
+def binarySearch(db, key):
+    l = 0
+    h = len(db)-1
+    while l<h:
+        m = (l+h)//2
+        if key == db[m]:
+            return m
+        elif key < db[m]:
+            h = m-1
+            result = h
+        else:
+            l = m+1
+            result = l
+    return result
 
 def destroyDatabase(dbType,mode):
     ## call DB--> remove()
@@ -280,7 +314,6 @@ def main():
     # create path
     if not os.path.exists(PATH_DIRECTORY):
         os.makedirs(PATH_DIRECTORY)
-    #global OUTPUT_FILE = open("answers","w") # output file
 
     try:
         dbTypeChoice = sys.argv[1].lower()
@@ -335,7 +368,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-## 1. what is a index file? how it works?
-## 2. use of the new methods. How to open in "read and write" and how to close it?
-## 3. how to reopen a database created before?
-### Use a big trunk of main()
