@@ -106,8 +106,6 @@ def createPopulateDatabase(dbType):
                 database2.put(value,key)
             except:
                 pass
-    #database.put(b'teppie',b'chen') ###################### test use
-    #database.put(b'teppif',b'chen1')
 
     # for test
     database.put(b'teppie',b'chen')
@@ -191,7 +189,6 @@ def retrieveWithData(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        #database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
         database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     value = input("Please enter a data: ").encode('UTF-8')
@@ -266,7 +263,7 @@ def retrieveWithRange(dbType):
             if key>=lowerBound and key>=upperBound:
                 results.append((key,database.get(key)))
         endTime = time.time()
-        elapsedTimeMilli = 1000000*(endTime-startTime)
+        elapsedTime = 1000000*(endTime-startTime)
 
         if not results:
             print('No result found for the range of key in the database.')
@@ -278,8 +275,6 @@ def retrieveWithRange(dbType):
         startTime = time.time()
         try:
             while not iter[0]>upperBound:
-                #print('key: ',iter[0].decode('UTF-8'))
-                #print('data: ', iter[1].decode('UTF-8'))
                 results.append(iter)
                 iter = (cur.next())
         except:
@@ -288,18 +283,6 @@ def retrieveWithRange(dbType):
 
         endTime = time.time()
         elapsedTime = 1000000*(endTime-startTime)
-        '''
-        keys = database.keys()
-        # use binary search to speed up search in indexfile
-        start = keySearch(database.keys(), lowerBound) # locate the start point of the keys
-        end = keySearch(database.keys(), upperBound)# locate the end point of the keys
-
-        startTime = time.time()
-        for i in range(start, end):
-            results.append((keys[i],database.get(keys[i])))
-        endTime = time.time()
-        elapsedTime = 1000000*(endTime-startTime)
-           '''
         
     print('%d results have been obtained'%len(results))
     # record in file
@@ -321,25 +304,6 @@ def retrieveWithRange(dbType):
         database.close()
     except Exception as e:
         print(e)
-
-def keySearch(dbKeys, key):
-    '''
-    using binary search to locate the key
-    in the database
-    '''
-    l = 0
-    h = len(dbKeys)-1
-    while l<h:
-        m = (l+h)//2
-        if key == dbKeys[m]:
-            return m
-        elif key < dbKeys[m]:
-            h = m-1
-            result = h
-        else:
-            l = m+1
-            result = l
-    return result
 
 def destroyDatabase(dbType,mode):
     ## call DB--> remove() to remove the database
