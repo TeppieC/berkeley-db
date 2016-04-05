@@ -14,7 +14,7 @@ Copyright 2016 Zhaorui Chen, Zhenyang Li, Jiaxuan Yue
    limitations under the License.
 '''
 # For sublime: check indent with spaces, and set indent as 4 spaces
-
+# to use: ./mydbtest [option]
 
 # imports
 from bsddb3 import db
