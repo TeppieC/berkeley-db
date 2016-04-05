@@ -15,10 +15,6 @@ Copyright 2016 Zhaorui Chen, Zhenyang Li, Jiaxuan Yue
 '''
 # For sublime: check indent with spaces, and set indent as 4 spaces
 
-# For the 3rd query, range search in based on the primary key of 
-# the records --- key value. Therefore if the main index is a B-tree
-# then it can be used for this range search.
-# We use two btree databases for the index file
 
 # imports
 from bsddb3 import db
@@ -74,6 +70,7 @@ def createPopulateDatabase(dbType):
     elif dbType==3:
         # create a index database
         database = db.DB()
+        # create a secondary index database using btree
         database2 = db.DB()
         try:
             database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
@@ -97,8 +94,18 @@ def createPopulateDatabase(dbType):
         # encoding
         key = key.encode(encoding='UTF-8')
         value = value.encode(encoding='UTF-8')
-        database.put(key, value);
+        try:
+            database.put(key, value)
+        except:
+            pass
 
+        # set the value with a secondary index
+        # in order to faster up in searching data
+        if dbType==3:
+            try:
+                database2.put(value,key)
+            except:
+                pass
     #database.put(b'teppie',b'chen') ###################### test use
     #database.put(b'teppif',b'chen1')
     #database.put(b'teppid',b'chen2')
@@ -125,9 +132,9 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database2 = db.DB()
+        #database2 = db.DB()
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        #database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please enter a valid key: ")
     startTime = time.time()
@@ -159,8 +166,8 @@ def retrieveWithKey(dbType):
     
     try:
         database.close()
-        if dbType==3:
-            database2.close()
+        #if dbType==3:
+        #    database2.close()
     except Exception as e:
         print(e)
 
@@ -177,18 +184,29 @@ def retrieveWithData(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database2 = db.DB()
-        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        #database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     value = input("Please enter a data: ").encode(encoding='UTF-8')
     keys = []
     startTime = time.time()
 
-    for key in database.keys():
-        if database.get(key)==value:
-            keys.append(key)
-
+    if dbType==1 or dbType==2:
+        for key in database.keys():
+            if database.get(key)==value:
+                keys.append(key)
+    else:
+        valueAsKey = value
+        #startPoint = keySearch(database.keys(), valueAsKey)
+        try:
+            keyAsValue = database.get(valueAsKey)
+            keys.append(keyAsValue)
+            # duplicate may occur
+        except:
+            print('Key not found for the given data in the database')
+            database.close()
+            return
+    
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
     # record in file
@@ -207,8 +225,6 @@ def retrieveWithData(dbType):
     # close the database
     try:
         database.close()
-        if dbType==3:
-            database2.close()
     except Exception as e:
         print(e)
 
@@ -236,11 +252,11 @@ def retrieveWithRange(dbType):
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        database2 = db.DB()
-        database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        #database2 = db.DB()
+        #database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
         
     results = []
-    if dbType==1 or dbType==2:
+    if dbType==1 or dbType==2: # if is btree or hash
         startTime = time.time()
         for key in database.keys():
             if key>=lowerBound and key>=upperBound:
@@ -251,7 +267,7 @@ def retrieveWithRange(dbType):
         if not results:
             print('No result found for the range of key in the database.')
             return
-    else:
+    else: # if is index file
         keys = database.keys()
         # use binary search to speed up search in indexfile
         start = keySearch(database.keys(), lowerBound) # locate the start point of the keys
@@ -280,8 +296,8 @@ def retrieveWithRange(dbType):
     # close the database
     try:
         database.close()
-        if dbType==3:
-            database2.close()
+        #if dbType==3:
+            #database2.close()
     except Exception as e:
         print(e)
 
