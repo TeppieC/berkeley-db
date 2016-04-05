@@ -131,7 +131,7 @@ def createPopulateDatabase(dbType):
 
 
 def retrieveWithKey(dbType):
-    print('#'*70)
+    print(''*70)
     print('****************Retrieve Data With Key**************')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
@@ -143,9 +143,7 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        #database2 = db.DB()
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        #database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please enter a valid key: ")
     startTime = time.time()
@@ -177,13 +175,11 @@ def retrieveWithKey(dbType):
     
     try:
         database.close()
-        #if dbType==3:
-        #    database2.close()
     except Exception as e:
         print(e)
 
 def retrieveWithData(dbType):
-    print('#'*70)
+    print(''*70)
     print('****************Retrieve Key With Data**************')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
@@ -202,34 +198,33 @@ def retrieveWithData(dbType):
     keys = []
     startTime = time.time()
 
-    if dbType==1 or dbType==2:
+    if dbType==1 or dbType==2: # if is btree or hash
         for key in database.keys():
             if database.get(key)==value:
                 keys.append(key)
-    else:
+    else: # if is indexfile
         valueAsKey = value
-        #startPoint = keySearch(database.keys(), valueAsKey)
+        startPoint = keySearch(database.keys(), valueAsKey)
         try:
             keyAsValue = database.get(valueAsKey)
             keys.append(keyAsValue)
-            # duplicate may occur
         except:
             print('Key not found for the given data in the database')
             database.close()
             return
-    
+
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
     # record in file
     file = open('answers', 'a')
-    if not keys==[]:
+    try:
         for key in keys:
             print("Retrieved key: "+ key.decode('UTF-8'))
             file.write(key.decode('UTF-8')+'\n')
             file.write(value.decode('UTF-8')+'\n')
             file.write('\n')
         file.close()
-    else:
+    except AttributeError:
         print('Key not found for the given data in the database.')
 
     print("Elapsed time: %d"%elapsedTimeMilli)
@@ -240,7 +235,7 @@ def retrieveWithData(dbType):
         print(e)
 
 def retrieveWithRange(dbType):
-    print('#'*70)
+    print(''*70)
     print('***********Retrieve Key and Data With A Range of Key**********')
     if not databaseExist(dbType):
         print('Database not exist, please select 1 to populate a new database')
@@ -263,9 +258,7 @@ def retrieveWithRange(dbType):
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
         database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
-        #database2 = db.DB()
-        #database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
-        
+
     results = []
     if dbType==1 or dbType==2: # if is btree or hash
         startTime = time.time()
@@ -279,6 +272,23 @@ def retrieveWithRange(dbType):
             print('No result found for the range of key in the database.')
             return
     else: # if is index file
+        cur = database.cursor()
+        iter = (cur.set_range(lowerBound))
+
+        startTime = time.time()
+        try:
+            while not iter[0]>upperBound:
+                #print('key: ',iter[0].decode('UTF-8'))
+                #print('data: ', iter[1].decode('UTF-8'))
+                results.append(iter)
+                iter = (cur.next())
+        except:
+            print('No results obtained for the query')
+            return
+
+        endTime = time.time()
+        elapsedTime = 1000000*(endTime-startTime)
+        '''
         keys = database.keys()
         # use binary search to speed up search in indexfile
         start = keySearch(database.keys(), lowerBound) # locate the start point of the keys
@@ -288,8 +298,9 @@ def retrieveWithRange(dbType):
         for i in range(start, end):
             results.append((keys[i],database.get(keys[i])))
         endTime = time.time()
-        elapsedTimeMilli = 1000000*(endTime-startTime)
-            
+        elapsedTime = 1000000*(endTime-startTime)
+           '''
+        
     print('%d results have been obtained'%len(results))
     # record in file
     file = open('answers', 'a')
@@ -303,13 +314,11 @@ def retrieveWithRange(dbType):
         file.write(data+'\n')
         file.write('\n')
     file.close()
-    print('Elapsed time: ', elapsedTimeMilli)
+    print('Elapsed time in microseconds: ', elapsedTime)
 
     # close the database
     try:
         database.close()
-        #if dbType==3:
-            #database2.close()
     except Exception as e:
         print(e)
 
@@ -322,9 +331,9 @@ def keySearch(dbKeys, key):
     h = len(dbKeys)-1
     while l<h:
         m = (l+h)//2
-        if key == db[m]:
+        if key == dbKeys[m]:
             return m
-        elif key < db[m]:
+        elif key < dbKeys[m]:
             h = m-1
             result = h
         else:
@@ -346,7 +355,8 @@ def destroyDatabase(dbType,mode):
         if dbType == 3:                        
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_index")
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_secindex")
-    except bsddb3.db.DBNoSuchFileError:
+    except:
+        # if database has not been created
         pass
 
 def main():
@@ -373,7 +383,10 @@ def main():
 
     while True:
         selected = 0
+        print('-'*70)
+        print(''*70)
         print('''
+               Berkeley DB application for project2
             ------------------------------------------
             1. Create and populate a database
             2. Retrieve records with a given key
