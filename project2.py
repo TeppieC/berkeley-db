@@ -92,8 +92,8 @@ def createPopulateDatabase(dbType):
         for i in range(vrng):
             value += str(get_random_char())
         # encoding
-        key = key.encode(encoding='UTF-8')
-        value = value.encode(encoding='UTF-8')
+        key = key.encode('UTF-8')
+        value = value.encode('UTF-8')
         try:
             database.put(key, value)
         except:
@@ -139,7 +139,7 @@ def retrieveWithKey(dbType):
     key = input("Please enter a valid key: ")
     startTime = time.time()
     try:
-        value = database.get(key.encode(encoding='UTF-8'))
+        value = database.get(key.encode('UTF-8'))
     except:
         print('Data not found')
         database.close()
@@ -148,7 +148,7 @@ def retrieveWithKey(dbType):
     elapsedTimeMilli = 1000000*(endTime-startTime)
 
     try:
-        value = value.decode(encoding='UTF-8')
+        value = value.decode('UTF-8')
     except AttributeError:
         print('Data not found for this key in the database')
         database.close()
@@ -187,7 +187,7 @@ def retrieveWithData(dbType):
         #database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
         database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
 
-    value = input("Please enter a data: ").encode(encoding='UTF-8')
+    value = input("Please enter a data: ").encode('UTF-8')
     keys = []
     startTime = time.time()
 
@@ -279,6 +279,7 @@ def retrieveWithRange(dbType):
         endTime = time.time()
         elapsedTimeMilli = 1000000*(endTime-startTime)
             
+    print('%d results have been obtained'%len(results))
     # record in file
     file = open('answers', 'a')
     print('Retrieved: ')
