@@ -201,6 +201,7 @@ def retrieveWithData(dbType):
                 keys.append(key)
     else: # if is indexfile
         valueAsKey = value
+        startPoint = keySearch(database.keys(), valueAsKey)
         try:
             keyAsValue = database.get(valueAsKey)
             keys.append(keyAsValue)
