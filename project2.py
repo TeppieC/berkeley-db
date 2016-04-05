@@ -108,7 +108,18 @@ def createPopulateDatabase(dbType):
                 pass
     #database.put(b'teppie',b'chen') ###################### test use
     #database.put(b'teppif',b'chen1')
-    #database.put(b'teppid',b'chen2')
+
+    # for test
+    database.put(b'teppie',b'chen')
+    database.put(b'nicholas',b'li')
+    database.put(b'jiaxuan',b'yue')
+    database.put(b'qwerty',b'abcdefghi')
+    if dbType==3:
+        database.put(b'abcdefghi',b'qwerty')
+        database2.put(b'chen',b'teppie')
+        database2.put(b'li',b'nicholas')
+        database2.put(b'yue',b'jiaxuan')
+
 
     print('Successfully populated the database')
     try:
