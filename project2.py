@@ -73,8 +73,8 @@ def createPopulateDatabase(dbType):
         # create a secondary index database using btree
         database2 = db.DB()
         try:
-            database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
-            database2.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_CREATE)
+            database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_CREATE)
+            database2.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_CREATE)
         except:
             print('Error creating file')
         random.seed(SEED)
@@ -143,7 +143,7 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
 
     key = input("Please enter a valid key: ")
     startTime = time.time()
@@ -191,7 +191,7 @@ def retrieveWithData(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_secindex', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_RDONLY)
 
     value = input("Please enter a data: ").encode('UTF-8')
     keys = []
@@ -255,7 +255,7 @@ def retrieveWithRange(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
 
     results = []
     if dbType==1 or dbType==2: # if is btree or hash
