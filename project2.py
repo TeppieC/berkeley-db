@@ -74,6 +74,7 @@ def createPopulateDatabase(dbType):
         database2 = db.DB()
         try:
             database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_CREATE)
+            database2.set_flags(db.DB_DUP)
             database2.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_CREATE)
         except:
             print('Error creating file')
@@ -203,14 +204,24 @@ def retrieveWithData(dbType):
                 keys.append(key)
     else: # if is indexfile
         valueAsKey = value
+        cur = database.cursor()
+
+        iter = cur.first()
+        for key in database.keys():
+            if iter==valueAsKey:
+                pass
+            iter = cur.next()
+        ''''
+        valueAsKey = value
         try:
-            keyAsValue = database.get(valueAsKey)
+            for key in database.keys():
+                if = database.get(valueAsKey)
             keys.append(keyAsValue)
         except:
             print('Key not found for the given data in the database')
             database.close()
             return
-
+'''
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
     # record in file
