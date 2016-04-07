@@ -114,7 +114,7 @@ def createPopulateDatabase(dbType):
     database.put(b'qwerty',b'abcdefghi')
     database.put(b'wasd',b'udlr')
     if dbType==3:
-        database.put(b'abcdefghi',b'qwerty')
+        database2.put(b'abcdefghi',b'qwerty')
         database2.put(b'chen',b'teppie')
         database2.put(b'li',b'nicholas')
         database2.put(b'yue',b'jiaxuan')
