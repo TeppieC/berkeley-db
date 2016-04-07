@@ -73,7 +73,7 @@ def createPopulateDatabase(dbType):
         # create a secondary index database using btree
         database2 = db.DB()
         try:
-            database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_CREATE)
+            database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
             database2.set_flags(db.DB_DUP)
             database2.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_CREATE)
         except:
@@ -145,7 +145,7 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please enter a valid key: ")
     startTime = time.time()
@@ -208,13 +208,15 @@ def retrieveWithData(dbType):
         valueAsKey = value
         cur = database.cursor()
 
-        #iter = cur.first()
-        #while not iter[0]==valueAsKey:
-        #    iter = cur.next()
         iter = cur.set(valueAsKey)
         while iter:
             keys.append(iter[1])
             iter = cur.next_dup()
+
+        try:
+            cur.close()
+        except:
+            print('Cannot close cursor')
 
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
@@ -261,7 +263,7 @@ def retrieveWithRange(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
 
     results = []
     if dbType==1 or dbType==2: # if is btree or hash
@@ -276,20 +278,25 @@ def retrieveWithRange(dbType):
             print('No result found for the range of key in the database.')
             return
     else: # if is index file
-        cur = database.cursor()
-        iter = (cur.set_range(lowerBound))
+        cur2 = database.cursor()
+        iter = (cur2.set_range(lowerBound))
 
         startTime = time.time()
+
         try:
             while not iter[0]>upperBound:
                 results.append(iter)
-                iter = (cur.next())
+                iter = (cur2.next())
         except:
             print('No results obtained for the query')
             return
-
+        
         endTime = time.time()
         elapsedTime = 1000000*(endTime-startTime)
+        try:
+            cur2.close()
+        except:
+            print('Cannot close cursor')
         
     print('%d results have been obtained'%len(results))
     # record in file
@@ -298,8 +305,6 @@ def retrieveWithRange(dbType):
     for kVPair in results:
         key = kVPair[0].decode('UTF-8')
         data = kVPair[1].decode('UTF-8')
-        #print('Key: ', key)
-        #print('Data: ', data)
         file.write(key+'\n')
         file.write(data+'\n')
         file.write('\n')
@@ -336,7 +341,6 @@ def destroyDatabase(dbType,mode):
         # if database has not been created
         os.rmdir('./tmp/zhaorui_db')
         os.rmdir('./tmp')
-        pass
 
 def main():
     # create path
