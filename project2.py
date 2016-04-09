@@ -73,7 +73,11 @@ def createPopulateDatabase(dbType):
         # create a secondary index database using btree
         database2 = db.DB()
         try:
+<<<<<<< HEAD
             database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_CREATE)
+=======
+            database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_CREATE)
+>>>>>>> 8a566759fbb768b00bf3d6ca6eac5197a7194fc3
             database2.set_flags(db.DB_DUP)
             database2.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_CREATE)
         except:
@@ -114,13 +118,14 @@ def createPopulateDatabase(dbType):
     database.put(b'jiaxuan',b'yue')
     database.put(b'qwerty',b'abcdefghi')
     database.put(b'wasd',b'udlr')
+    database.put(b'teppie1',b'chen')
     if dbType==3:
+        database2.put(b'chen',b'teppie1')
         database2.put(b'abcdefghi',b'qwerty')
         database2.put(b'chen',b'teppie')
         database2.put(b'li',b'nicholas')
         database2.put(b'yue',b'jiaxuan')
         database2.put(b'udlr',b'wasd')
-
 
     print('Successfully populated the database')
     try:
@@ -144,7 +149,7 @@ def retrieveWithKey(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
 
     key = input("Please enter a valid key: ")
     startTime = time.time()
@@ -192,6 +197,7 @@ def retrieveWithData(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
+        database.set_flags(db.DB_DUP)
         database.open(DA_FILE+'_secindex', None, db.DB_HASH, db.DB_RDONLY)
 
     value = input("Please enter a data: ").encode('UTF-8')
@@ -206,6 +212,7 @@ def retrieveWithData(dbType):
         valueAsKey = value
         cur = database.cursor()
 
+<<<<<<< HEAD
         iter = cur.first()
         for key in database.keys():
             if iter==valueAsKey:
@@ -222,11 +229,24 @@ def retrieveWithData(dbType):
             database.close()
             return
 '''
+=======
+        iter = cur.set(valueAsKey)
+        while iter:
+            keys.append(iter[1])
+            iter = cur.next_dup()
+
+        try:
+            cur.close()
+        except:
+            print('Cannot close cursor')
+
+>>>>>>> 8a566759fbb768b00bf3d6ca6eac5197a7194fc3
     endTime = time.time()
     elapsedTimeMilli = 1000000*(endTime-startTime)
     # record in file
     file = open('answers', 'a')
     try:
+        print('retrieved %d results'%len(keys))
         for key in keys:
             print("Retrieved key: "+ key.decode('UTF-8'))
             file.write(key.decode('UTF-8')+'\n')
@@ -266,7 +286,7 @@ def retrieveWithRange(dbType):
     elif dbType==2:
         database.open(DA_FILE+'_hash', None, db.DB_HASH, db.DB_RDONLY)
     elif dbType==3:
-        database.open(DA_FILE+'_index', None, db.DB_HASH, db.DB_RDONLY)
+        database.open(DA_FILE+'_index', None, db.DB_BTREE, db.DB_RDONLY)
 
     results = []
     if dbType==1 or dbType==2: # if is btree or hash
@@ -281,20 +301,25 @@ def retrieveWithRange(dbType):
             print('No result found for the range of key in the database.')
             return
     else: # if is index file
-        cur = database.cursor()
-        iter = (cur.set_range(lowerBound))
+        cur2 = database.cursor()
+        iter = (cur2.set_range(lowerBound))
 
         startTime = time.time()
+
         try:
             while not iter[0]>upperBound:
                 results.append(iter)
-                iter = (cur.next())
+                iter = (cur2.next())
         except:
             print('No results obtained for the query')
             return
-
+        
         endTime = time.time()
         elapsedTime = 1000000*(endTime-startTime)
+        try:
+            cur2.close()
+        except:
+            print('Cannot close cursor')
         
     print('%d results have been obtained'%len(results))
     # record in file
@@ -303,8 +328,6 @@ def retrieveWithRange(dbType):
     for kVPair in results:
         key = kVPair[0].decode('UTF-8')
         data = kVPair[1].decode('UTF-8')
-        #print('Key: ', key)
-        #print('Data: ', data)
         file.write(key+'\n')
         file.write(data+'\n')
         file.write('\n')
@@ -326,14 +349,21 @@ def destroyDatabase(dbType,mode):
     try:
         if dbType == 1:
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_btree")
+            os.rmdir('./tmp/zhaorui_db')
+            os.rmdir('./tmp')
         if dbType == 2:
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_hash")
-        if dbType == 3:                        
+            os.rmdir('./tmp/zhaorui_db')
+            os.rmdir('./tmp')
+        if dbType == 3:                  
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_index")
             db.DB().remove("./tmp/zhaorui_db/berkeley_db_secindex")
+            os.rmdir('./tmp/zhaorui_db')
+            os.rmdir('./tmp')
     except:
         # if database has not been created
-        pass
+        os.rmdir('./tmp/zhaorui_db')
+        os.rmdir('./tmp')
 
 def main():
     # create path
@@ -375,7 +405,7 @@ def main():
 
         while not (selected=='1' or selected=='2' or selected=='3' or selected=='4' or selected=='5' or selected=='6'):
             selected = input('Please select the program: ')
-            
+
         if selected == '1':
             createPopulateDatabase(dbType)
         elif selected == '2':
